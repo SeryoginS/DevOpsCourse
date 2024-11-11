@@ -1,0 +1,27 @@
+---
+- name: Install NGINX and configure index.html
+  hosts: azurevms
+  become: true
+  tasks:
+    - name: Update apt packages
+      apt:
+        update_cache: yes
+
+    - name: Install NGINX
+      apt:
+        name: nginx
+        state: present
+
+    - name: Create index.html file with custom content
+      copy:
+        dest: /var/www/html/index.html
+        content: "Ansible the best!"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Ensure NGINX is running
+      systemd:
+        name: nginx
+        state: started
+        enabled: yes

@@ -1,0 +1,13 @@
+---
+- name: List /etc directory and display output
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Execute ls command on /etc directory
+      shell: ls /etc
+      register: etc_listing
+
+    - name: Display the output of ls /etc
+      debug:
+        var: etc_listing.stdout

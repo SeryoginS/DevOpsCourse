@@ -1,0 +1,12 @@
+Overall, this makes for a confusing interface that could really use a makeover.
+It hurts discoverability of what you can do with git-config(1) and is comparatively easy to get wrong.
+Converting the command to have subcommands instead would go a long way to help address these issues.
+
+One concern in this context is backwards compatibility.
+Luckily, we can introduce subcommands without breaking backwards compatibility at all.
+This is because all the implicit modes of git-config(1) require that the first argument is a properly formatted config key.
+And as config keys must have a dot in their name, any value without a dot would have been discarded by git-config(1) previous to this change.
+Thus, given that none of the subcommands do have a dot, they are unambiguous.
+
+To retain backwards compatibility we only conditionally use subcommands and will fall back to the old syntax in case no subcommand was detected.
+This should help to transition to the new-style syntax until we eventually deprecate and remove the old-style syntax.
