@@ -108,15 +108,28 @@ resource "azurerm_network_interface_backend_address_pool_association" "example_l
 }
 
 # Virtual Machines
+resource "tls_private_key" "ssh_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "local_file" "private_key" {
+  content  = tls_private_key.ssh_key.private_key_pem
+  filename = "key_hw10.pem"
+}
+
 resource "azurerm_linux_virtual_machine" "example_vm" {
   count                   = 2
   name                    = "example-vm-${count.index}"
   location                = azurerm_resource_group.example_rg.location
   resource_group_name     = azurerm_resource_group.example_rg.name
-  size                     = "Standard_B1s"
-  disable_password_authentication = false
+  size                    = "Standard_B1s"
+  disable_password_authentication = true
   admin_username          = "adminuser"
-  admin_password          = "Solition37#&1607trEE"
+  admin_ssh_key {
+    username   = "adminuser"
+    public_key = tls_private_key.ssh_key.public_key_openssh
+  }
   availability_set_id     = azurerm_availability_set.example_avset.id
   network_interface_ids   = [azurerm_network_interface.example_nic[count.index].id]
 
