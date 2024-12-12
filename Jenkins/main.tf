@@ -9,13 +9,13 @@ provider "azurerm" {
 
 # Resource Group
 resource "azurerm_resource_group" "rg" {
-  name     = "jenkins-deploy-rg"
-  location = "West Europe"
+  name     = "jenk-deploy-rg"
+  location = "Poland Central"
 }
 
 # Virtual Network
 resource "azurerm_virtual_network" "vnet" {
-  name                = "jenkins-vnet"
+  name                = "jenk-vnet"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   address_space       = ["10.0.0.0/16"]
@@ -23,7 +23,7 @@ resource "azurerm_virtual_network" "vnet" {
 
 # Subnet
 resource "azurerm_subnet" "subnet" {
-  name                 = "jenkins-subnet"
+  name                 = "jenk-subnet"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.1.0/24"]
@@ -31,7 +31,7 @@ resource "azurerm_subnet" "subnet" {
 
 # Network Security Group (NSG)
 resource "azurerm_network_security_group" "nsg" {
-  name                = "jenkins-nsg"
+  name                = "jenk-nsg"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 }
@@ -72,9 +72,19 @@ resource "azurerm_subnet_network_security_group_association" "subnet_association
   network_security_group_id = azurerm_network_security_group.nsg.id
 }
 
+# Availability Set
+resource "azurerm_availability_set" "avset" {
+  name                         = "jenk-availability-set"
+  location                     = "Poland Central"
+  resource_group_name          = azurerm_resource_group.rg.name
+  managed                      = true
+  platform_fault_domain_count  = 2
+  platform_update_domain_count = 5
+}
+
 # Public IP
 resource "azurerm_public_ip" "public_ip" {
-  name                = "jenkins-public-ip"
+  name                = "jenk-public-ip"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method   = "Static"
@@ -82,12 +92,12 @@ resource "azurerm_public_ip" "public_ip" {
 
 # Network Interface
 resource "azurerm_network_interface" "nic" {
-  name                = "jenkins-nic"
+  name                = "jenk-nic"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 
   ip_configuration {
-    name                          = "jenkins-ipconfig"
+    name                          = "jenk-ipconfig"
     subnet_id                     = azurerm_subnet.subnet.id
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = azurerm_public_ip.public_ip.id
@@ -96,39 +106,45 @@ resource "azurerm_network_interface" "nic" {
 
 # Virtual Machine
 resource "azurerm_virtual_machine" "vm" {
-  name                  = "jenkins-ubuntu-vm"
-  location              = azurerm_resource_group.rg.location
+  name                  = "jenk-ubuntu-vm"
+  location              = "Poland Central"
   resource_group_name   = azurerm_resource_group.rg.name
+  vm_size               = "Standard_DS1_v2"
   network_interface_ids = [azurerm_network_interface.nic.id]
-  vm_size               = "Standard_B1s"
-
-  storage_os_disk {
-    name              = "osdisk"
-    caching           = "ReadWrite"
-    create_option     = "FromImage"
-    managed_disk_type = "Standard_LRS"
-  }
-
-  storage_image_reference {
-    publisher = "Canonical"
-    offer     = "0001-com-ubuntu-server-jammy"
-    sku       = "22_04-lts"
-    version   = "latest"
-  }
+  availability_set_id   = azurerm_availability_set.avset.id
 
   os_profile {
-    computer_name  = "jenkinsvm"
+    computer_name  = "jenkvm"
     admin_username = "azureuser"
   }
 
   os_profile_linux_config {
-    disable_password_authentication = false
+    disable_password_authentication = true
     ssh_keys {
-      path     = "/home/azureuser/.ssh/authorized_keys"
+      path    = "/home/azureuser/.ssh/authorized_keys"
       key_data = file("~/.ssh/id_rsa.pub")
     }
   }
+
+  storage_image_reference {
+    publisher = "Canonical"
+    offer     = "UbuntuServer"
+    sku       = "20.04-LTS"
+    version   = "latest"
+  }
+
+  storage_os_disk {
+    name          = "myosdisk1"
+    caching       = "ReadWrite"
+    create_option = "FromImage"
+  }
+
+  tags = {
+    environment = "production"
+  }
 }
+
+
 
 # Output Public IP of the VM
 output "vm_ip" {
