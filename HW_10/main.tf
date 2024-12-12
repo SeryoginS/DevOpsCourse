@@ -35,7 +35,7 @@ resource "azurerm_subnet" "example_subnet" {
   address_prefixes       = ["10.0.1.0/24"]
 }
 
-# Public IP for LB
+# Public IP for Load Balancer
 resource "azurerm_public_ip" "example_lb_public_ip" {
   name                    = "example-lb-public-ip"
   location                = azurerm_resource_group.example_rg.location
@@ -57,13 +57,13 @@ resource "azurerm_lb" "example_lb" {
   }
 }
 
-# Backend Address Pool for LB
+# Backend Address Pool for Load Balancer
 resource "azurerm_lb_backend_address_pool" "example_backend_pool" {
   loadbalancer_id          = azurerm_lb.example_lb.id
   name                     = "backend-pool"
 }
 
-# Health Probe for LB
+# Health Probe for Load Balancer
 resource "azurerm_lb_probe" "example_probe" {
   loadbalancer_id          = azurerm_lb.example_lb.id
   name                     = "http-probe"
@@ -85,7 +85,17 @@ resource "azurerm_lb_rule" "example_lb_rule" {
   probe_id                            = azurerm_lb_probe.example_probe.id
 }
 
-# Network Interface
+# Public IP for VMs
+resource "azurerm_public_ip" "example_vm_public_ip" {
+  count                   = 2
+  name                    = "example-vm-public-ip-${count.index}"
+  location                = azurerm_resource_group.example_rg.location
+  resource_group_name     = azurerm_resource_group.example_rg.name
+  allocation_method       = "Dynamic"
+  sku                     = "Standard"
+}
+
+# Network Interface for VMs
 resource "azurerm_network_interface" "example_nic" {
   count                   = 2
   name                    = "example-nic-${count.index}"
@@ -96,10 +106,11 @@ resource "azurerm_network_interface" "example_nic" {
     name                           = "internal"
     subnet_id                      = azurerm_subnet.example_subnet.id
     private_ip_address_allocation  = "Dynamic"
+    public_ip_address_id           = azurerm_public_ip.example_vm_public_ip[count.index].id
   }
 }
 
-# Associate each NIC with the Load Balancer Backend Pool
+# Associate NICs with Load Balancer Backend Pool
 resource "azurerm_network_interface_backend_address_pool_association" "example_lb_nic_association" {
   count                   = 2
   network_interface_id    = azurerm_network_interface.example_nic[count.index].id
@@ -151,6 +162,7 @@ output "load_balancer_public_ip" {
   value = azurerm_public_ip.example_lb_public_ip.ip_address
 }
 
-output "vm_ip" {
-  value = azurerm_public_ip.public_ip.ip_address
+# Output the VM Public IPs
+output "vm_public_ips" {
+  value = azurerm_public_ip.example_vm_public_ip[*].ip_address
 }
