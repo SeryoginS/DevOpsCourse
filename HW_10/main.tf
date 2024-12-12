@@ -150,3 +150,7 @@ resource "azurerm_linux_virtual_machine" "example_vm" {
 output "load_balancer_public_ip" {
   value = azurerm_public_ip.example_lb_public_ip.ip_address
 }
+
+output "vm_ip" {
+  value = azurerm_public_ip.public_ip.ip_address
+}
