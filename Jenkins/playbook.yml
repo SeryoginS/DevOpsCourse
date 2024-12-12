@@ -1,33 +1,27 @@
 ---
-- name: Install and configure Web Server
-  hosts: all
-  become: yes
-
+- name: Install NGINX and configure index.html
+  hosts: azurevms
+  become: true
   tasks:
-    - name: Update apt package cache
+    - name: Update apt packages
       apt:
         update_cache: yes
 
-    - name: Install NGINX server
+    - name: Install NGINX
       apt:
         name: nginx
         state: present
 
-    - name: Copy index.html to web server root
+    - name: Create index.html file with custom content
       copy:
-        src: /var/lib/jenkins/workspace/Azure-Terraform-Ansible/index.html
         dest: /var/www/html/index.html
-        mode: '0555'
-      notify: restart
+        content: "Ansible the best!"
+        owner: www-data
+        group: www-data
+        mode: '0644'
 
-    - name: Start and enable the web server
-      service:
+    - name: Ensure NGINX is running
+      systemd:
         name: nginx
         state: started
         enabled: yes
-
-  handlers:
-    - name: restart
-      service:
-        name: nginx
-        state: restarted
