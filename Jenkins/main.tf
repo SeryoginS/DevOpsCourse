@@ -10,7 +10,7 @@ provider "azurerm" {
 # Resource Group
 resource "azurerm_resource_group" "rg" {
   name     = "jenk-deploy-rg"
-  location = "Poland Central"
+  location = "West Europe"
 }
 
 # Virtual Network
@@ -107,7 +107,7 @@ resource "azurerm_network_interface" "nic" {
 # Virtual Machine
 resource "azurerm_virtual_machine" "vm" {
   name                  = "jenk-ubuntu-vm"
-  location              = "Poland Central"
+  location              = "West Europe"
   resource_group_name   = azurerm_resource_group.rg.name
   vm_size               = "Standard_DS1_v2"
   network_interface_ids = [azurerm_network_interface.nic.id]
