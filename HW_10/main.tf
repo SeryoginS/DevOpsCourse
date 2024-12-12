@@ -91,9 +91,10 @@ resource "azurerm_public_ip" "example_vm_public_ip" {
   name                    = "example-vm-public-ip-${count.index}"
   location                = azurerm_resource_group.example_rg.location
   resource_group_name     = azurerm_resource_group.example_rg.name
-  allocation_method       = "Dynamic"
+  allocation_method       = "Static"  # Static allocation for Standard SKU
   sku                     = "Standard"
 }
+
 
 # Network Interface for VMs
 resource "azurerm_network_interface" "example_nic" {

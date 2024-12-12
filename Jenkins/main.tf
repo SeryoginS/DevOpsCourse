@@ -72,16 +72,6 @@ resource "azurerm_subnet_network_security_group_association" "subnet_association
   network_security_group_id = azurerm_network_security_group.nsg.id
 }
 
-# Availability Set
-resource "azurerm_availability_set" "avset" {
-  name                         = "jenk-availability-set"
-  location                     = "Poland Central"
-  resource_group_name          = azurerm_resource_group.rg.name
-  managed                      = true
-  platform_fault_domain_count  = 2
-  platform_update_domain_count = 5
-}
-
 # Public IP
 resource "azurerm_public_ip" "public_ip" {
   name                = "jenk-public-ip"
@@ -105,46 +95,38 @@ resource "azurerm_network_interface" "nic" {
 }
 
 # Virtual Machine
-resource "azurerm_virtual_machine" "vm" {
-  name                  = "jenk-ubuntu-vm"
-  location              = "West Europe"
-  resource_group_name   = azurerm_resource_group.rg.name
-  vm_size               = "Standard_DS1_v2"
-  network_interface_ids = [azurerm_network_interface.nic.id]
-  availability_set_id   = azurerm_availability_set.avset.id
+resource "azurerm_linux_virtual_machine" "vm" {
+  name                = "jenk-ubuntu-vm"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  size                = "Standard_B1s"
+  admin_username      = "azureuser"
+  network_interface_ids = [
+    azurerm_network_interface.nic.id
+  ]
 
-  os_profile {
-    computer_name  = "jenkvm"
-    admin_username = "azureuser"
+  admin_ssh_key {
+    username   = "azureuser"
+    public_key = file("~/.ssh/id_rsa.pub")
   }
 
-  os_profile_linux_config {
-    disable_password_authentication = true
-    ssh_keys {
-      path    = "/home/azureuser/.ssh/authorized_keys"
-      key_data = file("~/.ssh/id_rsa.pub")
-    }
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+    disk_size_gb         = 30
   }
 
-  storage_image_reference {
+  source_image_reference {
     publisher = "Canonical"
-    offer     = "UbuntuServer"
-    sku       = "20.04-LTS"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts"
     version   = "latest"
-  }
-
-  storage_os_disk {
-    name          = "myosdisk1"
-    caching       = "ReadWrite"
-    create_option = "FromImage"
   }
 
   tags = {
     environment = "production"
   }
 }
-
-
 
 # Output Public IP of the VM
 output "vm_ip" {
