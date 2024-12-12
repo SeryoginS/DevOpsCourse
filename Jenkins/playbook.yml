@@ -1,0 +1,33 @@
+---
+- name: Install and configure Web Server
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Update apt package cache
+      apt:
+        update_cache: yes
+
+    - name: Install NGINX server
+      apt:
+        name: nginx
+        state: present
+
+    - name: Copy index.html to web server root
+      copy:
+        src: /var/lib/jenkins/workspace/Azure-Terraform-Ansible/index.html
+        dest: /var/www/html/index.html
+        mode: '0555'
+      notify: restart
+
+    - name: Start and enable the web server
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+  handlers:
+    - name: restart
+      service:
+        name: nginx
+        state: restarted

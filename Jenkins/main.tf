@@ -119,11 +119,14 @@ resource "azurerm_virtual_machine" "vm" {
   os_profile {
     computer_name  = "jenkinsvm"
     admin_username = "azureuser"
-    admin_password = "q23ewsQ@#EWSq23ews"
   }
 
   os_profile_linux_config {
     disable_password_authentication = false
+    ssh_keys {
+      path     = "/home/azureuser/.ssh/authorized_keys"
+      key_data = file("~/.ssh/id_rsa.pub") # Replace with your public key path
+    }
   }
 }
 
