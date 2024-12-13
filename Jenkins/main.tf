@@ -1,12 +1,3 @@
-terraform {
-  backend "azurerm" {
-    resource_group_name  = "jenk-deploy-rg"
-    storage_account_name = "terraformstateacc" # Change this to the actual storage account name you'll create
-    container_name       = "tfstate"
-    key                  = "terraform.tfstate"
-  }
-}
-
 provider "azurerm" {
   features {
     resource_group {
@@ -20,21 +11,6 @@ provider "azurerm" {
 resource "azurerm_resource_group" "rg" {
   name     = "jenk-deploy-rg"
   location = "West Europe"
-}
-
-# Backend Storage Resources
-resource "azurerm_storage_account" "storage" {
-  name                     = "terraformstateacc" # Must be globally unique
-  resource_group_name      = azurerm_resource_group.rg.name
-  location                 = azurerm_resource_group.rg.location
-  account_tier             = "Standard"
-  account_replication_type = "LRS"
-}
-
-resource "azurerm_storage_container" "container" {
-  name                  = "tfstate"
-  storage_account_name  = azurerm_storage_account.storage.name
-  container_access_type = "private"
 }
 
 # Virtual Network
