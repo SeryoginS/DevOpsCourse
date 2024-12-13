@@ -1,0 +1,55 @@
+pipeline {
+    agent any
+    environment {
+        REPO_URL = 'https://github.com/SeryoginS/DevOpsCourse.git'
+        REPO_BRANCH = 'main'
+        JENKINS_FOLDER = 'Jenkins'
+    }
+    stages {
+        stage('Clone Repository') {
+            steps {
+                checkout([$class: 'GitSCM',
+                          branches: [[name: "*/${REPO_BRANCH}"]],
+                          userRemoteConfigs: [[url: "${REPO_URL}"]]])
+            }
+        }
+        stage('Run Terraform') {
+            steps {
+                dir("${JENKINS_FOLDER}") {
+                    withEnv(["TF_INPUT=false"]) {
+                        script {
+                            sh 'terraform init'
+                            sh 'terraform apply -auto-approve'
+                        }
+                    }
+                }
+            }
+        }
+        stage('Fetch VM IP') {
+            steps {
+                dir("${JENKINS_FOLDER}") {
+                    script {
+                        env.VM_PUBLIC_IP = sh(script: "terraform output -raw vm_ip", returnStdout: true).trim()
+                        echo "Fetched VM IP: ${env.VM_PUBLIC_IP}"
+                    }
+                }
+            }
+        }
+        stage('Configure Environment with Ansible') {
+            steps {
+                dir("${JENKINS_FOLDER}") {
+                    writeFile file: 'inventory.ini', text: """
+[azurevms]
+${env.VM_PUBLIC_IP} ansible_user=azureuser ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+                    """
+                    sh 'ansible-playbook -i inventory.ini playbook.yml'
+                }
+            }
+        }
+    }
+    post {
+        always {
+            archiveArtifacts artifacts: "${JENKINS_FOLDER}/terraform.tfstate", fingerprint: true
+        }
+    }
+}

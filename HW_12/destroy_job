@@ -1,0 +1,29 @@
+pipeline {
+    agent any
+    environment {
+        REPO_URL = 'https://github.com/SeryoginS/DevOpsCourse.git'
+        REPO_BRANCH = 'main'
+        JENKINS_FOLDER = 'Jenkins'
+    }
+    stages {
+        stage('Clone Repository') {
+            steps {
+                checkout([$class: 'GitSCM',
+                          branches: [[name: "*/${REPO_BRANCH}"]],
+                          userRemoteConfigs: [[url: "${REPO_URL}"]]])
+            }
+        }
+        stage('Destroy Infrastructure') {
+            steps {
+                dir("${JENKINS_FOLDER}") {
+                    withEnv(["TF_INPUT=false"]) {
+                        script {
+                            sh 'terraform init'
+                            sh 'terraform destroy -auto-approve'
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
